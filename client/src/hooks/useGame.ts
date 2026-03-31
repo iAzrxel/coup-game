@@ -76,5 +76,36 @@ export function useGame() {
     });
   }
 
-  return { game, income, coup };
+  function assassinate(targetId: number) {
+    setGame((prev) => {
+      const newPlayers = [...prev.players];
+
+      const attacker = newPlayers[prev.currentPlayer];
+      const target = newPlayers.find((p) => p.id === targetId);
+
+      if (!target || attacker.coins < 3) return prev;
+
+      attacker.coins -= 3;
+
+      const card = target.cards.find((c) => !c.revealed);
+      if (card) {
+        card.revealed = true;
+      }
+
+      const aliveCards = target.cards.filter((c) => !c.revealed);
+      if (aliveCards.length === 0) {
+        target.alive = false;
+      }
+
+      const nextPlayer = (prev.currentPlayer + 1) % newPlayers.length;
+
+      return {
+        ...prev,
+        players: newPlayers,
+        currentPlayer: nextPlayer,
+      };
+    });
+  }
+
+  return { game, income, coup, assassinate };
 }
