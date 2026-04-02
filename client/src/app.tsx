@@ -1,7 +1,7 @@
 import { useGame } from "./hooks/useGame";
 
 function App() {
-  const { game, income, coup, assassinate } = useGame();
+  const { game, income, coup, assassinate, steal } = useGame();
   return (
     <div>
       <h1>Jogo de Cartas</h1>
@@ -19,6 +19,9 @@ function App() {
           )}
           {player.id !== game.players[game.currentPlayer].id && (
             <button onClick={() => assassinate(player.id)}>Assassinar</button>
+          )}
+          {player.id !== game.players[game.currentPlayer].id && (
+            <button onClick={() => steal(player.id)}>Roubar</button>
           )}
         </div>
       ))}

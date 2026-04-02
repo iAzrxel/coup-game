@@ -107,5 +107,29 @@ export function useGame() {
     });
   }
 
-  return { game, income, coup, assassinate };
+  function steal(targetId: number) {
+    setGame((prev) => {
+      const newPlayers = [...prev.players];
+
+      const attacker = newPlayers[prev.currentPlayer];
+      const target = newPlayers.find((p) => p.id === targetId);
+
+      if (!target || target.id === attacker.id) return prev;
+
+      const amount = Math.min(2, target.coins);
+
+      attacker.coins += amount;
+      target.coins -= amount;
+
+      const nextPlayer = (prev.currentPlayer + 1) % newPlayers.length;
+
+      return {
+        ...prev,
+        players: newPlayers,
+        currentPlayer: nextPlayer,
+      };
+    });
+  }
+
+  return { game, income, coup, assassinate, steal };
 }

@@ -1,4 +1,4 @@
-export type CardType = "duke" | "assassin";
+export type CardType = "duke" | "assassin" | "captain";
 
 export interface Card {
   type: CardType;
