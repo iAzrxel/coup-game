@@ -12,8 +12,18 @@ export interface Player {
   alive: boolean;
 }
 
+export type Phase = "action" | "challenge";
+
+export type PendingAction = {
+  type: "assassinate";
+  attackerId: number;
+  targetId: number;
+  requiredCard: CardType;
+} | null;
+
 export type GameState = {
   players: Player[];
   currentPlayer: number;
-  phase: "action" | "challenge" | "resolve";
+  phase: Phase;
+  pendingAction: PendingAction;
 };

@@ -25,6 +25,7 @@ export function useGame() {
     ],
     currentPlayer: 0,
     phase: "action",
+    pendingAction: null,
   });
 
   function income() {
@@ -78,31 +79,32 @@ export function useGame() {
 
   function assassinate(targetId: number) {
     setGame((prev) => {
+      const attacker = prev.players[prev.currentPlayer];
+      const target = prev.players.find((p) => p.id === targetId);
+
+      if (
+        !target ||
+        target.id === attacker.id ||
+        attacker.coins < 3 ||
+        prev.phase !== "action"
+      )
+        return prev;
+
       const newPlayers = [...prev.players];
-
-      const attacker = newPlayers[prev.currentPlayer];
-      const target = newPlayers.find((p) => p.id === targetId);
-
-      if (!target || attacker.coins < 3) return prev;
-
-      attacker.coins -= 3;
-
-      const card = target.cards.find((c) => !c.revealed);
-      if (card) {
-        card.revealed = true;
-      }
-
-      const aliveCards = target.cards.filter((c) => !c.revealed);
-      if (aliveCards.length === 0) {
-        target.alive = false;
-      }
-
-      const nextPlayer = (prev.currentPlayer + 1) % newPlayers.length;
+      newPlayers[prev.currentPlayer] = {
+        ...attacker,
+        coins: (attacker.coins -= 3),
+      };
 
       return {
         ...prev,
         players: newPlayers,
-        currentPlayer: nextPlayer,
+        pendingAction: {
+          type: "assassinate",
+          attackerId: attacker.id,
+          targetId: target.id,
+          requiredCard: "assassin",
+        },
       };
     });
   }
@@ -131,5 +133,62 @@ export function useGame() {
     });
   }
 
-  return { game, income, coup, assassinate, steal };
+  function revealFirstAliveCard(player: GameState["players"][number]) {
+    const card = player.cards.find((c) => !c.revealed);
+    if (card) {
+      card.revealed = true;
+    }
+
+    const aliveCards = player.cards.filter((c) => !c.revealed);
+
+    if (aliveCards.length === 0) {
+      player.alive = false;
+    }
+  }
+
+  function challenge(challengerId: number) {
+    setGame((prev) => {
+      if (prev.phase !== "challenge" || !prev.pendingAction) return prev;
+
+      const newPlayers = prev.players.map((player) => ({
+        ...player,
+        cards: player.cards.map((card) => ({ ...card })),
+      }));
+
+      const { attackerId, targetId, requiredCard, type } = prev.pendingAction;
+
+      const attacker = newPlayers.find((p) => p.id === attackerId);
+      const challenger = newPlayers.find((p) => p.id === challengerId);
+      const target = newPlayers.find((p) => p.id === targetId);
+
+      if (!attacker || !challenger || !target) return prev;
+      if (challenger.id === attacker.id) return prev;
+
+      const attackerHasCard = attacker.cards.some(
+        (card) => card.type === requiredCard && !card.revealed,
+      );
+
+      if (attackerHasCard) {
+        revealFirstAliveCard(challenger);
+
+        if (type === "assassinate") {
+          revealFirstAliveCard(target);
+        }
+      } else {
+        revealFirstAliveCard(attacker);
+      }
+
+      const nextPlayer = (prev.currentPlayer + 1) % newPlayers.length;
+
+      return {
+        ...prev,
+        players: newPlayers,
+        currentPlayer: nextPlayer,
+        phase: "action",
+        pendingAction: null,
+      };
+    });
+  }
+
+  return { game, income, coup, assassinate, steal, challenge };
 }
