@@ -190,5 +190,35 @@ export function useGame() {
     });
   }
 
-  return { game, income, coup, assassinate, steal, challenge };
+  function skipChallenge() {
+    setGame((prev) => {
+      if (prev.phase !== "challenge" || !prev.pendingAction) return prev;
+
+      const newPlayers = prev.players.map((player) => ({
+        ...player,
+        cards: player.cards.map((card) => ({ ...card })),
+      }));
+
+      const { targetId, type } = prev.pendingAction;
+      const target = newPlayers.find((p) => p.id === targetId);
+
+      if (!target) return prev;
+
+      if (type === "assassinate") {
+        revealFirstAliveCard(target);
+      }
+
+      const nextPlayer = (prev.currentPlayer + 1) % newPlayers.length;
+
+      return {
+        ...prev,
+        players: newPlayers,
+        currentPlayer: nextPlayer,
+        phase: "action",
+        pendingAction: null,
+      };
+    });
+  }
+
+  return { game, income, coup, assassinate, steal, challenge, skipChallenge };
 }
